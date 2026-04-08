@@ -8,7 +8,7 @@ from app.services.demo_data import seed_demo_data
 from app.routes import api_router, pages_router
 
 app = FastAPI(
-    title="Firma-365 | Monitoreo de Flota",
+    title="ProTracking | Monitoreo de Flota",
     description="Sistema de monitoreo de flota con KPIs - Datos de DQD",
     version="1.0.0",
 )

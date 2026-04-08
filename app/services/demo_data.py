@@ -77,7 +77,7 @@ def seed_demo_data(db: Session):
             categoria_licencia=cat,
             fecha_vencimiento_licencia=vence,
             telefono=f"+54 9 11 {random.randint(1000,9999)}-{random.randint(1000,9999)}",
-            email=f"{nombre.split()[0].lower()}@firma365.com",
+            email=f"{nombre.split()[0].lower()}@protracking.com",
             fecha_ingreso=hoy - timedelta(days=random.randint(180, 1500)),
             calificacion=round(random.uniform(3.5, 5.0), 1),
             total_viajes=random.randint(20, 200),
