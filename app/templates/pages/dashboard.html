@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | Firma-365{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard General</h4>
+
+<!-- KPI Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="kpi-value">{{ data.resumen.total_vehiculos }}</div>
+                    <div class="kpi-label">Total Vehiculos</div>
+                </div>
+                <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-truck-front"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="kpi-value" style="color: var(--success)">{{ data.disponibilidad.porcentaje }}%</div>
+                    <div class="kpi-label">Disponibilidad</div>
+                </div>
+                <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="kpi-value" style="color: var(--warning)">{{ data.vehiculos_taller.total_en_taller }}</div>
+                    <div class="kpi-label">En Taller</div>
+                </div>
+                <div class="kpi-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-wrench"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="kpi-value">{{ data.resumen.conductores_activos }}</div>
+                    <div class="kpi-label">Conductores</div>
+                </div>
+                <div class="kpi-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Second row KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="kpi-value">{{ "{:,.0f}".format(data.kilometraje.total_km) }}</div>
+                    <div class="kpi-label">Km Totales (30d)</div>
+                </div>
+                <div class="kpi-icon" style="background: rgba(147,52,230,0.1); color: #9334e6;">
+                    <i class="bi bi-signpost-2"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="kpi-value">${{ "{:,.2f}".format(data.costo_por_km.costo_por_km) }}</div>
+                    <div class="kpi-label">Costo por Km</div>
+                </div>
+                <div class="kpi-icon" style="background: rgba(0,188,212,0.1); color: #00bcd4;">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="kpi-value">{{ data.mtbf.promedio_mtbf_dias }}d</div>
+                    <div class="kpi-label">MTBF Promedio</div>
+                </div>
+                <div class="kpi-icon" style="background: rgba(255,152,0,0.1); color: #ff9800;">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="kpi-value" style="color: var(--danger)">{{ data.alertas.total_vencidos }}</div>
+                    <div class="kpi-label">Docs Vencidos</div>
+                </div>
+                <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6><i class="bi bi-pie-chart"></i> Estado de Flota</h6>
+            <div style="height: 260px;">
+                <canvas id="chartEstadoFlota"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6><i class="bi bi-wrench"></i> Mantenimientos Prev. vs Corr.</h6>
+            <div style="height: 260px;">
+                <canvas id="chartMantenimientos"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6><i class="bi bi-cash-stack"></i> Costos por Categoria</h6>
+            <div style="height: 260px;">
+                <canvas id="chartCostos"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="chart-card">
+            <h6><i class="bi bi-graph-up"></i> Tendencia de Siniestros (12 meses)</h6>
+            <div style="height: 300px;">
+                <canvas id="chartSiniestros"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6><i class="bi bi-shield-exclamation"></i> Siniestros por Gravedad</h6>
+            <div style="height: 300px;">
+                <canvas id="chartGravedad"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts & Tables -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h6><i class="bi bi-exclamation-triangle text-danger"></i> Alertas de Vencimiento</h6>
+            {% if data.alertas.total_vencidos > 0 %}
+            <div class="alert-card alert-danger mb-2">
+                <strong>{{ data.alertas.total_vencidos }} documentos vencidos</strong>
+            </div>
+            {% endif %}
+            {% if data.alertas.total_por_vencer > 0 %}
+            <div class="alert-card alert-warning mb-2">
+                <strong>{{ data.alertas.total_por_vencer }} documentos por vencer</strong> (proximos 30 dias)
+            </div>
+            {% endif %}
+            {% if data.alertas.licencias_vencidas > 0 %}
+            <div class="alert-card alert-danger mb-2">
+                <i class="bi bi-person-badge"></i> <strong>{{ data.alertas.licencias_vencidas }} licencias vencidas</strong>
+            </div>
+            {% endif %}
+            {% if data.alertas.licencias_por_vencer > 0 %}
+            <div class="alert-card alert-warning mb-2">
+                <i class="bi bi-person-badge"></i> <strong>{{ data.alertas.licencias_por_vencer }} licencias por vencer</strong>
+            </div>
+            {% endif %}
+            {% if data.alertas.total_vencidos == 0 and data.alertas.total_por_vencer == 0 %}
+            <div class="alert-card alert-success">
+                <i class="bi bi-check-circle"></i> Toda la documentacion esta al dia
+            </div>
+            {% endif %}
+
+            {% for doc in data.alertas.documentos_vencidos[:5] %}
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                    <strong>{{ doc.vehiculo }}</strong> - {{ doc.tipo }}
+                    <br><small class="text-muted">#{{ doc.numero }}</small>
+                </div>
+                <span class="badge bg-danger">Vencido hace {{ doc.dias_restantes|abs }} dias</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h6><i class="bi bi-wrench text-warning"></i> Vehiculos en Taller</h6>
+            {% if data.vehiculos_taller.vehiculos %}
+            <table class="table table-fleet">
+                <thead>
+                    <tr>
+                        <th>Vehiculo</th>
+                        <th>Tipo</th>
+                        <th>Dias</th>
+                        <th>Descripcion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in data.vehiculos_taller.vehiculos %}
+                    <tr>
+                        <td><strong>{{ v.placa }}</strong><br><small>{{ v.marca }}</small></td>
+                        <td><span class="status-badge status-en_taller">{{ v.tipo_mantenimiento or 'N/A' }}</span></td>
+                        <td>{{ v.dias_en_taller }}d</td>
+                        <td><small>{{ v.descripcion[:40] }}</small></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert-card alert-success">
+                <i class="bi bi-check-circle"></i> No hay vehiculos en taller
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Top Conductores -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-12">
+        <div class="chart-card">
+            <h6><i class="bi bi-people"></i> Rendimiento de Conductores</h6>
+            <div class="table-responsive">
+                <table class="table table-fleet">
+                    <thead>
+                        <tr>
+                            <th>Conductor</th>
+                            <th>Calificacion</th>
+                            <th>Viajes</th>
+                            <th>Km Totales</th>
+                            <th>Siniestros</th>
+                            <th>Vence Licencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in data.conductores.conductores %}
+                        <tr>
+                            <td><strong>{{ c.nombre }}</strong></td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress progress-thin flex-grow-1" style="width:80px">
+                                        <div class="progress-bar {% if c.calificacion >= 4 %}bg-success{% elif c.calificacion >= 3 %}bg-warning{% else %}bg-danger{% endif %}"
+                                             style="width:{{ c.calificacion / 5 * 100 }}%"></div>
+                                    </div>
+                                    <small>{{ c.calificacion }}</small>
+                                </div>
+                            </td>
+                            <td>{{ c.viajes }}</td>
+                            <td>{{ "{:,.0f}".format(c.km) }}</td>
+                            <td>
+                                {% if c.siniestros > 0 %}
+                                <span class="badge bg-danger">{{ c.siniestros }}</span>
+                                {% else %}
+                                <span class="badge bg-success">0</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ c.licencia_vence }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Estado de Flota (Doughnut)
+createDoughnut('chartEstadoFlota',
+    ['Disponibles', 'En Ruta', 'En Taller', 'Fuera de Servicio'],
+    [{{ data.resumen.disponibles }}, {{ data.resumen.en_ruta }}, {{ data.resumen.en_taller }}, {{ data.resumen.fuera_de_servicio }}],
+    [COLORS.success, COLORS.primary, COLORS.warning, COLORS.danger]
+);
+
+// Mantenimientos
+createDoughnut('chartMantenimientos',
+    ['Preventivo', 'Correctivo'],
+    [{{ data.mantenimientos.preventivos }}, {{ data.mantenimientos.correctivos }}],
+    [COLORS.success, COLORS.danger]
+);
+
+// Costos por categoría
+{% set cats = data.costos.por_categoria %}
+createDoughnut('chartCostos',
+    [{% for c in cats %}'{{ c.categoria }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{% for c in cats %}{{ c.total }}{% if not loop.last %},{% endif %}{% endfor %}]
+);
+
+// Tendencia Siniestros (Line)
+{% set trend = data.siniestralidad.tendencia_mensual %}
+createLine('chartSiniestros',
+    [{% for t in trend %}'{{ t.mes }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{
+        label: 'Siniestros',
+        data: [{% for t in trend %}{{ t.siniestros }}{% if not loop.last %},{% endif %}{% endfor %}],
+        borderColor: COLORS.danger,
+        backgroundColor: 'rgba(234,67,53,0.1)',
+        fill: true,
+    }]
+);
+
+// Gravedad
+{% set grav = data.siniestralidad.por_gravedad %}
+createDoughnut('chartGravedad',
+    ['Leve', 'Moderado', 'Grave'],
+    [{{ grav.leve }}, {{ grav.moderado }}, {{ grav.grave }}],
+    [COLORS.warning, COLORS.orange, COLORS.danger]
+);
+</script>
+{% endblock %}

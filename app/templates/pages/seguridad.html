@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Seguridad | Firma-365{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="bi bi-shield-check"></i> Seguridad y Documentacion</h4>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ data.siniestralidad.total_siniestros }}</div>
+            <div class="kpi-label">Siniestros (12m)</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value" style="color: var(--danger)">{{ data.siniestralidad.indice }}%</div>
+            <div class="kpi-label">Indice Siniestralidad</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value" style="color: var(--success)">{{ data.documentacion.porcentaje_cumplimiento }}%</div>
+            <div class="kpi-label">Cumplimiento Docs</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">${{ "{:,.0f}".format(data.siniestralidad.costo_total) }}</div>
+            <div class="kpi-label">Costo Siniestros</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="chart-card">
+            <h6><i class="bi bi-graph-up"></i> Tendencia de Siniestros</h6>
+            <div style="height: 300px;">
+                <canvas id="chartSiniestrosTrend"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6>Por Gravedad</h6>
+            <div style="height: 300px;">
+                <canvas id="chartGravedad"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Documentación -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6><i class="bi bi-file-earmark"></i> Estado Documentacion</h6>
+            <div style="height: 260px;">
+                <canvas id="chartDocs"></canvas>
+            </div>
+            <div class="row text-center mt-3">
+                <div class="col-4">
+                    <div class="text-success fw-bold">{{ data.documentacion.vigentes }}</div>
+                    <small>Vigentes</small>
+                </div>
+                <div class="col-4">
+                    <div class="text-warning fw-bold">{{ data.documentacion.por_vencer }}</div>
+                    <small>Por vencer</small>
+                </div>
+                <div class="col-4">
+                    <div class="text-danger fw-bold">{{ data.documentacion.vencidos }}</div>
+                    <small>Vencidos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="chart-card">
+            <h6>Documentacion por Tipo</h6>
+            <table class="table table-fleet">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Total</th>
+                        <th>Vencidos</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in data.documentacion.por_tipo %}
+                    <tr>
+                        <td><strong>{{ t.tipo|replace('_', ' ')|capitalize }}</strong></td>
+                        <td>{{ t.total }}</td>
+                        <td>
+                            {% if t.vencidos > 0 %}
+                            <span class="badge bg-danger">{{ t.vencidos }}</span>
+                            {% else %}
+                            <span class="badge bg-success">0</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set pct = ((t.total - t.vencidos) / t.total * 100) if t.total > 0 else 0 %}
+                            <div class="progress progress-thin" style="width:150px;">
+                                <div class="progress-bar {% if pct >= 80 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                     style="width:{{ pct }}%"></div>
+                            </div>
+                            <small>{{ "{:.0f}".format(pct) }}% al dia</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h6 class="text-danger"><i class="bi bi-exclamation-circle"></i> Documentos Vencidos</h6>
+            {% for doc in data.alertas.documentos_vencidos %}
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                    <strong>{{ doc.vehiculo }}</strong> - {{ doc.tipo|replace('_', ' ')|capitalize }}
+                    <br><small class="text-muted">#{{ doc.numero }}</small>
+                </div>
+                <span class="badge bg-danger">{{ doc.dias_restantes|abs }}d vencido</span>
+            </div>
+            {% else %}
+            <div class="alert-card alert-success">
+                <i class="bi bi-check-circle"></i> Sin documentos vencidos
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h6 class="text-warning"><i class="bi bi-clock"></i> Documentos por Vencer (30 dias)</h6>
+            {% for doc in data.alertas.documentos_por_vencer %}
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                    <strong>{{ doc.vehiculo }}</strong> - {{ doc.tipo|replace('_', ' ')|capitalize }}
+                    <br><small class="text-muted">#{{ doc.numero }}</small>
+                </div>
+                <span class="badge bg-warning text-dark">{{ doc.dias_restantes }}d restantes</span>
+            </div>
+            {% else %}
+            <div class="alert-card alert-success">
+                <i class="bi bi-check-circle"></i> Sin documentos por vencer
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Conductores -->
+<div class="chart-card mb-4">
+    <h6><i class="bi bi-people"></i> Ranking de Conductores</h6>
+    <div class="table-responsive">
+        <table class="table table-fleet table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Conductor</th>
+                    <th>Calificacion</th>
+                    <th>Viajes</th>
+                    <th>Km</th>
+                    <th>Siniestros</th>
+                    <th>Vence Licencia</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in data.conductores.conductores %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ c.nombre }}</strong></td>
+                    <td>
+                        {% for star in range(5) %}
+                        <i class="bi {% if star < c.calificacion|int %}bi-star-fill text-warning{% else %}bi-star text-muted{% endif %}" style="font-size:0.8rem"></i>
+                        {% endfor %}
+                        <small class="ms-1">({{ c.calificacion }})</small>
+                    </td>
+                    <td>{{ c.viajes }}</td>
+                    <td>{{ "{:,.0f}".format(c.km) }}</td>
+                    <td>
+                        {% if c.siniestros == 0 %}
+                        <span class="badge bg-success">0</span>
+                        {% elif c.siniestros <= 2 %}
+                        <span class="badge bg-warning text-dark">{{ c.siniestros }}</span>
+                        {% else %}
+                        <span class="badge bg-danger">{{ c.siniestros }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ c.licencia_vence }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% set trend = data.siniestralidad.tendencia_mensual %}
+createLine('chartSiniestrosTrend',
+    [{% for t in trend %}'{{ t.mes }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{
+        label: 'Siniestros',
+        data: [{% for t in trend %}{{ t.siniestros }}{% if not loop.last %},{% endif %}{% endfor %}],
+        borderColor: COLORS.danger,
+        backgroundColor: 'rgba(234,67,53,0.1)',
+        fill: true,
+    }]
+);
+
+{% set grav = data.siniestralidad.por_gravedad %}
+createDoughnut('chartGravedad',
+    ['Leve', 'Moderado', 'Grave'],
+    [{{ grav.leve }}, {{ grav.moderado }}, {{ grav.grave }}],
+    [COLORS.warning, COLORS.orange, COLORS.danger]
+);
+
+createDoughnut('chartDocs',
+    ['Vigentes', 'Por Vencer', 'Vencidos'],
+    [{{ data.documentacion.vigentes }}, {{ data.documentacion.por_vencer }}, {{ data.documentacion.vencidos }}],
+    [COLORS.success, COLORS.warning, COLORS.danger]
+);
+</script>
+{% endblock %}

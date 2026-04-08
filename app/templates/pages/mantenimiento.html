@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Mantenimiento | Firma-365{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="bi bi-wrench-adjustable"></i> Mantenimiento</h4>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ data.mantenimientos.total }}</div>
+            <div class="kpi-label">Total Mantenimientos (90d)</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value" style="color: var(--success)">{{ data.mantenimientos.ratio_preventivo }}%</div>
+            <div class="kpi-label">Ratio Preventivo</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ data.mtbf.promedio_mtbf_dias }}d</div>
+            <div class="kpi-label">MTBF Promedio</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ data.mttr.promedio_mttr_dias }}d</div>
+            <div class="kpi-label">MTTR Promedio</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6>Preventivo vs Correctivo</h6>
+            <div style="height: 280px;">
+                <canvas id="chartPrevCorr"></canvas>
+            </div>
+            <div class="row text-center mt-3">
+                <div class="col-6">
+                    <div class="text-success fw-bold">${{ "{:,.2f}".format(data.mantenimientos.costo_preventivo) }}</div>
+                    <small class="text-muted">Costo Preventivo</small>
+                </div>
+                <div class="col-6">
+                    <div class="text-danger fw-bold">${{ "{:,.2f}".format(data.mantenimientos.costo_correctivo) }}</div>
+                    <small class="text-muted">Costo Correctivo</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="chart-card">
+            <h6>MTBF por Vehiculo (dias entre fallas)</h6>
+            <div style="height: 350px;">
+                <canvas id="chartMTBF"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MTTR Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6><i class="bi bi-stopwatch"></i> MTTR - Tiempo de Reparacion</h6>
+            <div class="d-flex flex-column gap-3 mt-3">
+                <div class="d-flex justify-content-between">
+                    <span>Promedio</span>
+                    <strong>{{ data.mttr.promedio_mttr_dias }} dias</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Minimo</span>
+                    <strong class="text-success">{{ data.mttr.min_dias }} dias</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Maximo</span>
+                    <strong class="text-danger">{{ data.mttr.max_dias }} dias</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Total reparaciones</span>
+                    <strong>{{ data.mttr.total_reparaciones }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="chart-card">
+            <h6><i class="bi bi-wrench"></i> Vehiculos Actualmente en Taller</h6>
+            {% if data.taller.vehiculos %}
+            <table class="table table-fleet">
+                <thead>
+                    <tr>
+                        <th>Vehiculo</th>
+                        <th>Tipo Mant.</th>
+                        <th>Dias en Taller</th>
+                        <th>Descripcion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for v in data.taller.vehiculos %}
+                    <tr>
+                        <td><strong>{{ v.placa }}</strong><br><small class="text-muted">{{ v.marca }}</small></td>
+                        <td>
+                            {% if v.tipo_mantenimiento == 'preventivo' %}
+                            <span class="badge bg-success">Preventivo</span>
+                            {% elif v.tipo_mantenimiento == 'correctivo' %}
+                            <span class="badge bg-danger">Correctivo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong>{{ v.dias_en_taller }}</strong> dias
+                            {% if v.dias_en_taller > 7 %}
+                            <i class="bi bi-exclamation-triangle text-warning ms-1"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ v.descripcion }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert-card alert-success mt-3">
+                <i class="bi bi-check-circle"></i> No hay vehiculos en taller actualmente
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+createDoughnut('chartPrevCorr',
+    ['Preventivo ({{ data.mantenimientos.preventivos }})', 'Correctivo ({{ data.mantenimientos.correctivos }})'],
+    [{{ data.mantenimientos.preventivos }}, {{ data.mantenimientos.correctivos }}],
+    [COLORS.success, COLORS.danger]
+);
+
+{% set mtbf_data = data.mtbf.vehiculos %}
+createBar('chartMTBF',
+    [{% for v in mtbf_data %}'{{ v.placa }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{
+        label: 'MTBF (dias)',
+        data: [{% for v in mtbf_data %}{{ v.mtbf_dias if v.mtbf_dias else 0 }}{% if not loop.last %},{% endif %}{% endfor %}],
+        backgroundColor: [{% for v in mtbf_data %}{% if v.mtbf_dias and v.mtbf_dias > 60 %}COLORS.success{% elif v.mtbf_dias and v.mtbf_dias > 30 %}COLORS.warning{% else %}COLORS.danger{% endif %}{% if not loop.last %},{% endif %}{% endfor %}],
+    }]
+);
+</script>
+{% endblock %}

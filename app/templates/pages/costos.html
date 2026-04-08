@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Costos | Firma-365{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="bi bi-cash-stack"></i> Costos de Operacion</h4>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">${{ "{:,.0f}".format(data.costos.total_general) }}</div>
+            <div class="kpi-label">Costo Total (30d)</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">${{ "{:,.2f}".format(data.costo_km.costo_por_km) }}</div>
+            <div class="kpi-label">Costo por Km</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ "{:,.0f}".format(data.combustible.total_litros) }}L</div>
+            <div class="kpi-label">Combustible (30d)</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">${{ "{:,.2f}".format(data.combustible.costo_promedio_litro) }}</div>
+            <div class="kpi-label">Precio Prom./Litro</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-5">
+        <div class="chart-card">
+            <h6>Distribucion de Costos</h6>
+            <div style="height: 320px;">
+                <canvas id="chartCostoDist"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="chart-card">
+            <h6>Tendencia Diaria de Costos</h6>
+            <div style="height: 320px;">
+                <canvas id="chartCostoTrend"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Combustible -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h6><i class="bi bi-fuel-pump"></i> Combustible por Vehiculo</h6>
+            <div style="height: 350px;">
+                <canvas id="chartCombustible"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-card">
+            <h6><i class="bi bi-list-ul"></i> Detalle por Categoria</h6>
+            <table class="table table-fleet">
+                <thead>
+                    <tr>
+                        <th>Categoria</th>
+                        <th>Registros</th>
+                        <th>Total</th>
+                        <th>% del Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in data.costos.por_categoria %}
+                    <tr>
+                        <td>
+                            <i class="bi bi-circle-fill" style="font-size:8px; color: {{ ['#1a73e8','#34a853','#fbbc04','#ea4335','#9334e6','#00bcd4','#ff9800','#e91e63'][loop.index0 % 8] }}"></i>
+                            {{ c.categoria|capitalize }}
+                        </td>
+                        <td>{{ c.registros }}</td>
+                        <td><strong>${{ "{:,.2f}".format(c.total) }}</strong></td>
+                        <td>
+                            {% set pct = (c.total / data.costos.total_general * 100) if data.costos.total_general > 0 else 0 %}
+                            <div class="progress progress-thin" style="width:100px;">
+                                <div class="progress-bar" style="width:{{ pct }}%; background: {{ ['#1a73e8','#34a853','#fbbc04','#ea4335','#9334e6','#00bcd4','#ff9800','#e91e63'][loop.index0 % 8] }}"></div>
+                            </div>
+                            <small>{{ "{:.1f}".format(pct) }}%</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Costo por Km breakdown -->
+<div class="chart-card mb-4">
+    <h6><i class="bi bi-speedometer"></i> Costo por Km - Desglose por Categoria</h6>
+    <div class="row text-center mt-3">
+        {% for cat, monto in data.costo_km.por_categoria.items() %}
+        <div class="col">
+            <div class="fw-bold">${{ "{:,.2f}".format(monto) }}</div>
+            <small class="text-muted">{{ cat|capitalize }}</small>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% set cats = data.costos.por_categoria %}
+createDoughnut('chartCostoDist',
+    [{% for c in cats %}'{{ c.categoria|capitalize }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{% for c in cats %}{{ c.total }}{% if not loop.last %},{% endif %}{% endfor %}]
+);
+
+{% set trend = data.costos.tendencia_diaria %}
+createLine('chartCostoTrend',
+    [{% for t in trend %}'{{ t.fecha }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{
+        label: 'Costo Diario ($)',
+        data: [{% for t in trend %}{{ t.monto }}{% if not loop.last %},{% endif %}{% endfor %}],
+        borderColor: COLORS.primary,
+        backgroundColor: 'rgba(26,115,232,0.1)',
+        fill: true,
+    }]
+);
+
+{% set comb = data.combustible.por_vehiculo[:10] %}
+createBar('chartCombustible',
+    [{% for c in comb %}'{{ c.placa }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{
+        label: 'Litros',
+        data: [{% for c in comb %}{{ c.litros }}{% if not loop.last %},{% endif %}{% endfor %}],
+        backgroundColor: COLORS.orange,
+    }],
+    true
+);
+</script>
+{% endblock %}

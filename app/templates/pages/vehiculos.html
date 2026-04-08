@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Vehiculos | Firma-365{% endblock %}
+
+{% block content %}
+<h4 class="mb-4"><i class="bi bi-truck-front"></i> Vehiculos</h4>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ data.utilizacion.promedio_utilizacion }}%</div>
+            <div class="kpi-label">Utilizacion Promedio</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ "{:,.0f}".format(data.kilometraje.total_km) }}</div>
+            <div class="kpi-label">Km Totales (30d)</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value">{{ "{:,.0f}".format(data.kilometraje.promedio_km) }}</div>
+            <div class="kpi-label">Km Promedio</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card">
+            <div class="kpi-value" style="color: var(--warning)">{{ data.taller.total_en_taller }}</div>
+            <div class="kpi-label">En Taller</div>
+        </div>
+    </div>
+</div>
+
+<!-- Utilización Chart -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="chart-card">
+            <h6><i class="bi bi-bar-chart"></i> Tasa de Utilizacion por Vehiculo</h6>
+            <div style="height: 400px;">
+                <canvas id="chartUtilizacion"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="chart-card">
+            <h6><i class="bi bi-signpost-2"></i> Top 10 - Kilometraje</h6>
+            <div style="height: 400px;">
+                <canvas id="chartKm"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de Vehículos -->
+<div class="chart-card">
+    <h6><i class="bi bi-table"></i> Detalle de Utilizacion</h6>
+    <div class="table-responsive">
+        <table class="table table-fleet table-hover">
+            <thead>
+                <tr>
+                    <th>Placa</th>
+                    <th>Vehiculo</th>
+                    <th>Viajes (30d)</th>
+                    <th>Utilizacion</th>
+                    <th>Barra</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in data.utilizacion.vehiculos %}
+                <tr>
+                    <td><strong>{{ v.placa }}</strong></td>
+                    <td>{{ v.marca }}</td>
+                    <td>{{ v.viajes }}</td>
+                    <td>{{ v.tasa_utilizacion }}%</td>
+                    <td style="width: 200px;">
+                        <div class="progress progress-thin">
+                            <div class="progress-bar {% if v.tasa_utilizacion >= 60 %}bg-success{% elif v.tasa_utilizacion >= 30 %}bg-warning{% else %}bg-danger{% endif %}"
+                                 style="width:{{ v.tasa_utilizacion }}%"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% set vehiculos = data.utilizacion.vehiculos %}
+createBar('chartUtilizacion',
+    [{% for v in vehiculos %}'{{ v.placa }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{
+        label: 'Utilizacion %',
+        data: [{% for v in vehiculos %}{{ v.tasa_utilizacion }}{% if not loop.last %},{% endif %}{% endfor %}],
+        backgroundColor: [{% for v in vehiculos %}{% if v.tasa_utilizacion >= 60 %}COLORS.success{% elif v.tasa_utilizacion >= 30 %}COLORS.warning{% else %}COLORS.danger{% endif %}{% if not loop.last %},{% endif %}{% endfor %}],
+    }]
+);
+
+{% set km_data = data.kilometraje.por_vehiculo[:10] %}
+createBar('chartKm',
+    [{% for v in km_data %}'{{ v.placa }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    [{
+        label: 'Km',
+        data: [{% for v in km_data %}{{ v.km }}{% if not loop.last %},{% endif %}{% endfor %}],
+        backgroundColor: COLORS.primary,
+    }],
+    true
+);
+</script>
+{% endblock %}
